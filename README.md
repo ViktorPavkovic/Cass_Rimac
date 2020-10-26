@@ -24,7 +24,7 @@
  
     VPC: 10.10.0.0/16
 	    Subnet 1 (cassandra):   10.10.0.0/24
-		    Node1	10.10.0.x
+		Node1	10.10.0.x
 	    	Node2	10.10.0.x
 	    	...
 	    Subnet 2 (ansible):     10.10.1.0/24
