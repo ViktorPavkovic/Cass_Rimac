@@ -1,0 +1,7 @@
+# 1x t2.micro, CentOS 8
+
+---
+
+ec2prod_count: 0
+ec2prod_it: t2.micro
+ec2prod_ami: ami-0eaa60c13746ed0d1   # CentOS 8 with Cassandra ready

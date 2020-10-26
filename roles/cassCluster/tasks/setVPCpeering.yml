@@ -1,0 +1,20 @@
+# Set up VPC peering with existing VPC
+
+---
+
+- name: Create VPC peering
+  ec2_vpc_peer:
+    state: present
+    region: "{{ region }}"
+    vpc_id: "{{ allow_vpc_id }}"
+    peer_region: "{{ region }}"
+    peer_vpc_id: "{{ new_vpc.vpc.id }}"
+    tags:
+      Name: Peering with Cassandra VPC
+  register: new_vpc_peer
+
+- name: Accept VPC peering
+  ec2_vpc_peer:
+    state: accept
+    region: "{{ region }}"
+    peering_id: "{{ new_vpc_peer.peering_id }}"

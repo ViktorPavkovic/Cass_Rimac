@@ -1,0 +1,13 @@
+# Adds created instances to Ansible hosts file
+
+---
+
+- name: Add instances to hosts
+  lineinfile:
+    insertafter: "[cassandra]"
+    state: present
+    path: "{{ hosts_path }}"
+    line: "{{ item.private_ip }}"
+  with_items:
+    - "{{ ec2_dev.instances }}"
+    - "{{ ec2_prod.instances }}"

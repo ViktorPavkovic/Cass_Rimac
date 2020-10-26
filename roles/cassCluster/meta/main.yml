@@ -1,0 +1,7 @@
+galaxy_info:
+  author: Viktor Pavkovic
+  description: Create and maintain Cassandra cluster on AWS
+
+  min_ansible_version: 2.9
+  galaxy_tags: []
+  dependencies: []

@@ -1,0 +1,11 @@
+# Get or create subnet for Cassandra (10.10.0.0/24)
+
+---
+
+- name: Collect data about subnet or create one
+  ec2_vpc_subnet:
+    cidr: 10.10.0.0/24
+    state: present
+    region: "{{ region }}"
+    vpc_id: "{{ new_vpc.vpc.id }}"
+  register: new_subnet

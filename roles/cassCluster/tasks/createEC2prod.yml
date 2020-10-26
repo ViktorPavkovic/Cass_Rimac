@@ -1,0 +1,16 @@
+# Creates EC2 instance with configuration in ./vars/ec2prod.yml
+
+---
+
+- name: Create EC2 instance (prod)
+  ec2:
+    wait: yes
+    region: "{{ region }}"
+    vpc_subnet_id: "{{ new_subnet.subnet.id }}"
+    group: "{{ security_group }}"
+
+    instance_type: "{{ ec2prod_it }}"
+    image: "{{ ec2dev_ami }}"
+    key_name: "{{ key_name }}"
+    count: "{{ ec2prod_count }}"
+  register: ec2_prod
