@@ -16,14 +16,16 @@
  Since Cassandra can't have public access, I've decided to configure AMI with Cassandra, Python and Java installed.
  Everything except Cassandra configuration was tested and worked from single playbook. At this point I decided to split it into tasks in single role. Sadly, I've ran out of time and this remains incomplete and untested.
 
-&nbsp;
  ***
-&nbsp;
+ &nbsp;
 
  #### Prerequisites and using the code
  Requires Ansible (written in 2.9) with amazon.aws collection.
+ 
  It's **strongly** recommended to encrypt ./cassCluster/vars/secret.yml after writing your keys.
+ 
  Only supported region is *eu-west-1* as I've published Cassandra AMI (ami-0eaa60c13746ed0d1) there.
+ 
  Network is hardcoded into tasks (./cassCluster/tasks/getVPC.yml) and should be edited if 10.10.1.0/16 range isn't available.
  
  The entire thing still needs main playbook, but it's written in mind that you'll be calling it with
@@ -40,8 +42,7 @@
 	    Subnet 2 (management):     10.10.1.0/24
 	    	Ansible	10.10.1.x
 
-&nbsp;
  ***
-&nbsp;
+ &nbsp;
 
  Thank you for your time! :)
