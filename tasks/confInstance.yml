@@ -1,0 +1,20 @@
+---
+
+- name: Install JDK 8
+  package:
+    name: java-1.8.0
+    state: latest
+
+- name: Add repository
+  yum_repository:
+    description: Apache Cassandra
+    name: cassandra.repo
+    baseurl: https://www.apache.org/dist/cassandra/redhat/311x/
+    gpgcheck: yes
+    repo_gpgcheck: yes
+    gpgkey: https://www.apache.org/dist/cassandra/KEYS
+
+- name: Install Cassandra
+  package:
+    name: "cassandra-{{ cass_version }}"
+    state: present

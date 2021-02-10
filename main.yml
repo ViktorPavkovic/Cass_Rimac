@@ -1,0 +1,63 @@
+# Manage Cassandra  cluster
+
+# When reducing the number of instances, instances with the
+# same tag are sorted alphabetically and first ones deleted
+
+# IP should be decomissioned/assassinated through nodetool
+# before/after reducing the number of instances.
+
+---
+
+# Tasks on AWS
+- hosts: localhost
+  gather_facts: yes
+
+  vars:
+    ec2_count: 1      # How many instances should be total
+    seeds: []
+
+  tasks:
+  - name: Import variables
+    include_vars: files/secret.yml
+
+  - name: Key pair management
+    include_tasks: tasks/getKey.yml
+
+  - name: EC2 management
+    include_tasks: tasks/manageEC2.yml
+
+  - name: Update seeds variable to include all running instances
+    set_fact:
+      seeds: "{{ seeds + [item.private_ip_address] }}"
+    with_items: "{{ ec2_cass.instances }}"
+
+  - name: Add instances to virtual hosts file
+    add_host:
+      hostname: "{{ item.private_ip_address }}"
+      ansible_ssh_private_key_file: "~/.ssh/{{ key_name }}.pem"
+      ansible_user: ec2-user
+      group: ec2_cass_nodes
+      seeds: "{{ seeds }}"
+    loop: "{{ ec2_cass.instances }}"
+
+# Tasks on Cassandra instances (setup and configuration)
+- hosts: ec2_cass_nodes
+  gather_facts: no
+  become: yes
+
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'  # Don't check for fingerprint when connecting
+    
+  tasks:
+    - name: Import variables
+      include_vars: files/secret.yml
+
+    - name: Wait for instance to become available and gather facts
+      wait_for_connection:
+    - setup:
+
+    - name: Configure instance and install Cassandra
+      include_tasks: tasks/confInstance.yml
+
+    - name: Setup Cassandra
+      include_tasks: tasks/setupCassandra.yml

@@ -1,46 +1,43 @@
- # Cass_Rimac
- Hello and welcome to my project. It’s purpose is automated creation and scaling of Cassandra cluster with Ansible.
+## Ansible playbook for Cassandra cluster management
 
- The initial idea was to start from single EC2 machine (ansible) and create everything else. Since up until now I've worked with playbooks mostly, I started writing everything in one and see how far that can get me. At some point during this I've moved ansible within the cass-vpc and used it as bastion.
- 
- #### The initial plan:
+### About this project
+Hello and welcome to my project. It’s purpose is automated creation and scaling of Cassandra cluster with Ansible.
 
- When starting the project, I had the following steps in plan:
- - Create VPC (w/out IG) and set up VPC peering with ansible
- - Configure subnet and security group
- - Launch EC2 instances from pre-setup AMI with varying environments
- - Update host file with new node(s)
- - Update Cassandra configuration and restart service
- - Deal with credentials securely
- 
- Since Cassandra can't have public access, I've decided to configure AMI with Cassandra, Python and Java installed.
- Everything except Cassandra configuration was tested and worked from single playbook. At this point I decided to split it into tasks in single role. Sadly, I've ran out of time and this remains incomplete and untested.
+### Before we start
+It is strongly recommended to encrypt `files/secret.yml` with ansible-vault as it contains sensitive data.
 
- ***
- &nbsp;
+Cassandra should not be directly accessed through internet so the playbook does not assign it public IP. For configuration Ansible needs access to instance, so run this playbook on machine with access to desired subnet (such as another EC2 instance with Ansible installed).
 
- #### Prerequisites and using the code
- 
- - Requires Ansible (written in 2.9) with amazon.aws collection.
- - It's **strongly** recommended to encrypt ./cassCluster/vars/secret.yml after writing your keys.
- - Only supported region is *eu-west-1* as I've published Cassandra AMI (ami-0eaa60c13746ed0d1) there.
- - Network is hardcoded into tasks (./cassCluster/tasks/getVPC.yml) and should be edited if 10.10.1.0/16 range isn't available.
- 
- The entire thing still needs main playbook, but it's written in mind that you'll be calling it with
+By default, playbook creates security group that allows access from anywhere. This is not recommended and should be replaced with your desired IPs in `tasks/manageEC2.yml`.
 
- `ansible-playbook cassandraCluster.yml --extra-vars "ec2prod_count=x ec2dev_count=y" --vault-password-file /path/to/file`
+Playbook creates EC2 key pair and stores it to S3 bucket (bucket name is in key_bucket variable). Either create the bucket or skip the step and provide your key by altering variable key_name.
 
- #### Network topology
- 
-    VPC: 10.10.0.0/16
-	    Subnet 1 (cassandra):  10.10.0.0/24
-            Node1	10.10.0.x
-            Node2	10.10.0.x
-	    	...
-	    Subnet 2 (management): 10.10.1.0/24
-	    	Ansible	10.10.1.x
+Outside of builtin Ansible collection, playbook requires community.aws and amazon.aws to also be installed. Run `ansible-galaxy collection install community.aws` and `ansible-galaxy collection install amazon.aws` to set it up.
 
- ***
- &nbsp;
+### How to use
+Clone the repository locally, fill and encrypt `files/secret.yml` than run `ansible-playbook main.yml --ask-vault-pass`.
 
- Thank you for your time! :)
+Credentials for Cassandra are stored locally to cass.info, please remember to save them somewhere safe.
+
+### What it does
+By default, playbook does following setps:
+
+* Create new key pair Cassandra-Cluster, store it locally (~/.ssh) and in S3 bucket. If key already exists, download it from S3 bucket.
+
+* Create SG-Cassandra security group with default Cassandra ports and SSH accessible from anywhere
+
+* Launch 1x t3.small Amazon Linux 2 EC2 instance
+
+* Install Cassandra 3.11.10 and configure it (copy configuration from cassandra.j2 and enable service)
+
+* When creating a new cluster `files/change_pass.j2` is run which changes credentials for default database user. These credentials are stored locally in cass.info. You can also use this file to run some cqlsh commands (creating keyspace, tables, other users and such). 
+
+### Connecting to database
+When instance is up you can connect to it using SSH (.pem key is stored in your ~/.ssh, user is ec2-user) and run `cqlsh -u cassandra -p [password] [private ip]`
+
+Password and IP are in cass.info file.
+
+### Changing number of nodes in cluster
+To increase number of nodes simply increase the `ec2_count` variable in main.yml.
+
+Decreasing the number of nodes does not remove them from Cassandra ring and aditional manual steps are required. Either decomission or assassinate nodes using nodetool before or after number of instances has been lowered. When reducing the number of instances Ansible sorts them alphabetically by Instance ID (i-xxx) and deletes the first ones.

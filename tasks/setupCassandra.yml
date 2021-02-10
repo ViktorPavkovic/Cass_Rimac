@@ -1,0 +1,56 @@
+---
+  
+- name: Generate credentials
+  set_fact:
+    cass_pwd: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=16') }}"
+  run_once: true
+- set_fact:
+    cass_user: cassandra
+    cass_ip: "{{ ansible_host}}"
+
+- name: Push new Cassandra configuration to instance
+  template:
+    src: files/cassandra.j2
+    dest: /etc/cassandra/conf/cassandra.yaml
+    force: yes
+- name: Copy password change script
+  template:
+    src: files/change_pass.j2
+    dest: ~/change_pass.cql
+    force: no
+  register: new_instance
+
+- name: Start and enable service
+  service:
+    name: cassandra
+    state: started
+    enabled: yes
+- name: Wait for service to initialize
+  wait_for:
+    port: 9042
+    host: "{{ cass_ip }}"
+
+
+# When new instance is up
+- block:
+  # Write instance info (IP, DB user and password) locally
+  - name: Create local file for instances information
+    copy:
+      content: ""
+      dest: ./cass.info
+      force: yes
+    delegate_to: localhost
+  - name: Add Cassandra credentials to local file
+    shell: "echo '{{ cass_ip }},{{ cass_user }},{{ cass_pwd }}' >> cass.info"
+    delegate_to: localhost
+
+  # Change default password
+  - name: Run cqlsh configuration script
+    shell: cqlsh -f ~/change_pass.cql "{{ cass_ip }}" -u cassandra -p cassandra || /bin/true
+    run_once: true
+  when: new_instance.changed
+
+- name: Restart service to apply new configuration
+  service:
+    name: cassandra
+    state: restarted

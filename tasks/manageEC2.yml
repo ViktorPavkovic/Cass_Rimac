@@ -1,0 +1,81 @@
+---
+
+- name: Define security group
+  ec2_group:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+
+    region: "{{ region }}"
+    vpc_id: "{{ vpc_id }}"
+
+    name: "{{ sg_name }}"
+    description: "{{ sg_desc }}"
+    tags: { "Name": "{{ sg_name }}" }
+    state: present
+
+    rules:
+      - rule_desc: SSH
+        proto: tcp
+        ports: 22
+        cidr_ip:
+          - 0.0.0.0/0
+
+      - rule_desc: Cassandra JMX
+        proto: tcp
+        ports: 7199
+        cidr_ip:
+          - 0.0.0.0/0
+
+      - rule_desc: Cassandra Client
+        proto: tcp
+        ports: 9160
+        cidr_ip:
+          - 0.0.0.0/0
+
+      - rule_desc: Cassandra Internode
+        proto: tcp
+        ports: 7000
+        cidr_ip:
+          - 0.0.0.0/0
+
+      - rule_desc: Cassandra Client
+        proto: tcp
+        ports: 9142
+        cidr_ip:
+          - 0.0.0.0/0
+
+      - rule_desc: Cassandra Client
+        proto: tcp
+        ports: 9042
+        cidr_ip:
+          - 0.0.0.0/0
+
+- name: Manage EC2 instances
+  ec2:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+
+    wait: yes
+    region: "{{ region }}"
+    key_name: "{{ key_name }}"
+
+    count_tag:
+      Name: "{{ ec2_tag }}"
+    exact_count: "{{ ec2_count }}"
+
+    instance_type: "{{ ec2_it }}"
+    image: "{{ ec2_ami }}"
+    group: "{{ sg_name }}"
+    vpc_subnet_id: "{{ ec2_subnet }}"
+    instance_tags: { "Name": "{{ ec2_tag }}" }
+
+- name: Register all Cassandra instances (running or being created)
+  ec2_instance_info:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    region: "{{ region }}"
+    
+    filters:
+      "tag:Name": "{{ ec2_tag }}"
+      instance-state-name: ["running", "pending"]
+  register: ec2_cass

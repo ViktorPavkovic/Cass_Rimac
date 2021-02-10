@@ -1,0 +1,54 @@
+# Generates new EC2 key if it doesn't already exist
+# Saves it to S3 bucket (key_bucket variable) and locally (~/.ssh/)
+# If key already exists get it from S3 bucket
+
+---
+
+- name: Generate EC2 key if none exists
+  ec2_key:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+
+    region: "{{ region }}"
+    name: "{{ key_name }}"
+    force: no
+  register: new_key
+
+# If new key is created
+- block:
+  - name: Save the key to local machine
+    copy:
+      content: "{{ new_key.key.private_key }}"
+      dest: "{{ key_name }}.pem"
+
+  - name: Upload private key to S3 bucket "{{ key_bucket }}"
+    aws_s3:
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+
+      bucket: "{{ key_bucket }}"
+      object: "{{ key_name }}.pem"
+      src: "{{ key_name }}.pem"
+      mode: put
+      overwrite: 'never'
+  when: new_key.changed
+
+# If key already exists
+- name: Fetch EC2 key pair from S3
+  aws_s3:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    
+    bucket: "{{ key_bucket }}"
+    mode: get
+    object: "{{ key_name }}.pem"
+    dest: "{{ key_name }}.pem"
+  when: not new_key.changed
+
+- name: Move the key to home folder
+  command: "mv -f {{ key_name }}.pem ~/.ssh/{{ key_name }}.pem"
+  
+- name: Set 400 mode on key
+  file:
+    path: "~/.ssh/{{ key_name }}.pem"
+    mode: '0400'

@@ -1,7 +1,0 @@
-# 1x t2.micro, CentOS 8 
-
----
-
-ec2dev_count: 0
-ec2dev_it: t2.micro
-ec2dev_ami: ami-0eaa60c13746ed0d1   # CentOS 8 with Cassandra ready

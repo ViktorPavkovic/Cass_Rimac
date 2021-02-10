@@ -1,0 +1,5 @@
+# Instance info
+*.info
+
+# Key pairs
+*.pem

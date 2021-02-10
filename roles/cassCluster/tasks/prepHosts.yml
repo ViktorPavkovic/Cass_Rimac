@@ -1,9 +1,0 @@
-# Creates [cassandra] group in hosts file if there isn't one.
-
----
-
-- name: Prepare hosts file
-  lineinfile:
-    path: "{{ hosts_path }}"
-    line: "[cassandra]"
-    state: present
